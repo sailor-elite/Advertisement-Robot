@@ -29,7 +29,7 @@ Components used in the project:
 - .mp3 file format
 - 256kbps quality
 - 44.1 kHz sample rate
-- Mono channel for better sound (not necessary!)
+- Mono channel for better sound (not necessary)
 
 For working audio mp3 converter check out the **Useful links** section.
 
@@ -42,11 +42,10 @@ The circuit diagrams for both Raspberry and ESP32 is shown in my Github: https:/
 1. Connect electronic parts for ESP32 and Raspberry boards using given circuit diagrams
 2. Insert MicroSD card with your own mp3 files (Remember to adjust proper settings which are mentioned in the **Dependencies** section)
 3. Upload the *main.cpp* code from *audioesp* folder to ESP32 board
-4. Upload the *main.py code from *picomotorcontrol* folder to Raspberry board
-5. Click the reset button for both boards
-6. Connect to the custom Raspberry Pi Pico WiFi
-7. Copy the Raspbery Pi Pico's Wifi IP adress and paste it on the web browser
-8. It should be ready to go! 
+4. Upload the *main.py* code from *picomotorcontrol* folder to Raspberry Pi Pico W's board
+5. Connect to the custom Raspberry Pi Pico W Access Point
+6. Copy the Raspbery Pi Pico W's Access Point IP adress (192.168.4.1) and paste it on the web browser
+7. It should be ready to go! 
 
 # USEFUL LINKS
 https://onlineaudioconverter.com/#
