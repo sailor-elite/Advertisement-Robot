@@ -41,10 +41,12 @@ The circuit diagrams for both Raspberry and ESP32 is shown in my Github: https:/
 
 1. Connect electronic parts for ESP32 and Raspberry boards using given circuit diagrams
 2. Insert MicroSD card with your own mp3 files (Remember to adjust proper settings which are mentioned in the **Dependencies** section)
-3. Upload the main.cpp code from audioesp folder to ESP32 board
-4. Upload the ______ code from _________ folder to Raspberry board
+3. Upload the *main.cpp* code from *audioesp* folder to ESP32 board
+4. Upload the *main.py code from *picomotorcontrol* folder to Raspberry board
 5. Click the reset button for both boards
-6. It should be ready to go! 
+6. Connect to the custom Raspberry Pi Pico WiFi
+7. Copy the Raspbery Pi Pico's Wifi IP adress and paste it on the web browser
+8. It should be ready to go! 
 
 # USEFUL LINKS
 https://onlineaudioconverter.com/#
