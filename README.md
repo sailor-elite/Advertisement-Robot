@@ -23,7 +23,7 @@ Components used in the project:
 **Libriaries:**
 - Default Arduino Libraries
 - AudioI2S library made by schreibfaul1
-- SD library made by Arduino (for some IDEs it is not needed)
+- SD library made by Arduino
 
 **Audio file adjustments:**
 - .mp3 file format
