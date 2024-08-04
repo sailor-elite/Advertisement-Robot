@@ -1,14 +1,14 @@
 # GENERAL INFORMATION
 
 The purpose of this project is to create advertisement robot using ESP32 and Raspberry Pi Pico microprocessors. 
-Mentioned boards are used for the sound effects (ESP32) and steering DC Motors through Access Point (Raspberry Pi Pico).
+Mentioned boards are used for the sound effects (ESP32) and steering DC Motors through Access Point (Raspberry Pi Pico W).
 
 # COMPONENTS
 
 Components used in the project:
 - ESP32 S3 N16R8 DevKitC-1 16MB Flash 8MB PSRAM 2 x USB C
 - Raspberry Pi Pico W - RP2040 ARM Cortex M0+ CYW43439 - WiFi
-- MciroSD reader board
+- MicroSD reader board
 
 # DEPENDENCIES
 
@@ -25,7 +25,7 @@ Components used in the project:
 - AudioI2S library made by schreibfaul1
 - SD library made by Arduino (for some IDEs it is not needed)
 
-**MicroSD card adjustments:**
+**Audio file adjustments:**
 - .mp3 file format
 - 256kbps quality
 - 44.1 kHz sample rate
@@ -34,9 +34,9 @@ Components used in the project:
 For working audio mp3 converter check out the **Useful links** section.
 
 # CIRCUIT DIAGRAM
-DC Motor Steering Circuit: ![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/42aefdd8-7d6b-430b-a88b-212ead98adfd) 
-Audio Circuit: ![Esp32Audio_bb](https://github.com/user-attachments/assets/04ebd0ec-229a-4bcf-8707-837bba1134ac) 
-Power supply for the Audio Circuit: ![PowerSupplyCircuit_bb](https://github.com/user-attachments/assets/907c398e-a168-46ea-b94d-b6abd995351c)
+DC Motor Steering Schematic: ![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/42aefdd8-7d6b-430b-a88b-212ead98adfd) 
+Audio Schematic: ![Esp32Audio_bb](https://github.com/user-attachments/assets/04ebd0ec-229a-4bcf-8707-837bba1134ac) 
+Power supply Schematic: ![PowerSupplyCircuit_bb](https://github.com/user-attachments/assets/907c398e-a168-46ea-b94d-b6abd995351c)
 # INSTALLATION
 
 1. Connect electronic parts for ESP32 and Raspberry boards using given circuit diagrams
