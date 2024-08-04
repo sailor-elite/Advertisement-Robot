@@ -34,8 +34,9 @@ Components used in the project:
 For working audio mp3 converter check out the **Useful links** section.
 
 # CIRCUIT DIAGRAM
-![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/42aefdd8-7d6b-430b-a88b-212ead98adfd) ![Esp32Audio_bb](https://github.com/user-attachments/assets/04ebd0ec-229a-4bcf-8707-837bba1134ac) 
-![PowerSupplyCircuit_bb](https://github.com/user-attachments/assets/907c398e-a168-46ea-b94d-b6abd995351c)
+DC Motor Steering Circuit: ![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/42aefdd8-7d6b-430b-a88b-212ead98adfd) 
+Audio Circuit: ![Esp32Audio_bb](https://github.com/user-attachments/assets/04ebd0ec-229a-4bcf-8707-837bba1134ac) 
+Power supply for the Audio Circuit: ![PowerSupplyCircuit_bb](https://github.com/user-attachments/assets/907c398e-a168-46ea-b94d-b6abd995351c)
 # INSTALLATION
 
 1. Connect electronic parts for ESP32 and Raspberry boards using given circuit diagrams
