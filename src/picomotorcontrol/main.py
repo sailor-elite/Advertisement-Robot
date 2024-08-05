@@ -1,48 +1,70 @@
 import network
 import socket
-from machine import Pin, PWM
+from machine import Pin, PWM, Timer
+import time
 
+# Motor control pins and configuration
 RIGHT_MOTOR_PIN1 = 0
 RIGHT_MOTOR_PIN2 = 1
 LEFT_MOTOR_PIN1 = 2
 LEFT_MOTOR_PIN2 = 3
-DEFAULT_FREQUENCY = 50
-DEFAULT_DUTY_CYCLE = 25535
+DEFAULT_FREQUENCY = 50           # PWM frequency for motors
+DEFAULT_DUTY_CYCLE = 65535       # Maximum duty cycle for full speed
 
 RIGHT_MOTOR_CONTROL_PIN_OUTPUT = 6
 LEFT_MOTOR_CONTROL_PIN_OUTPUT = 7
 
-# Konfiguracja GPIO dla L298N
+# Ultrasonic sensor configuration
+TRIGGER_PIN = 26                 # Pin to send trigger signal
+ECHO_PIN = 27                    # Pin to receive echo signal
+
+# Distance thresholds for stopping and turning
+DISTANCE_STOP0 = 40              # Distance to stop the vehicle
+DISTANCE_STOP1 = 45              # Distance to start turning
+
+# Autonomous and forward mode settings
+AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
+FORWARD_TIMER_PERIOD = 100       # Time interval for checking forward distance
+
+# Initialize motor pins
 IN1 = Pin(RIGHT_MOTOR_PIN1, Pin.OUT)
 IN2 = Pin(RIGHT_MOTOR_PIN2, Pin.OUT)
 IN3 = Pin(LEFT_MOTOR_PIN1, Pin.OUT)
 IN4 = Pin(LEFT_MOTOR_PIN2, Pin.OUT)
 
+# Set up PWM for motor speed control
 EN1 = PWM(Pin(RIGHT_MOTOR_CONTROL_PIN_OUTPUT))
 EN2 = PWM(Pin(LEFT_MOTOR_CONTROL_PIN_OUTPUT))
-
 EN1.freq(DEFAULT_FREQUENCY)
 EN2.freq(DEFAULT_FREQUENCY)
 EN1.duty_u16(DEFAULT_DUTY_CYCLE)  
 EN2.duty_u16(DEFAULT_DUTY_CYCLE)
 
-# Steering motor functions
+# Initialize ultrasonic sensor pins
+TRIG = Pin(TRIGGER_PIN, Pin.OUT)
+ECHO = Pin(ECHO_PIN, Pin.IN)
+
+# Function to move the vehicle forward
 def move_forward():
     motor1_forward()
     motor2_forward()
 
+# Function to move the vehicle backward
 def move_backward():
     motor1_backward()
     motor2_backward()
 
+# Function to turn the vehicle left
 def turn_left():
-    motor1_backward()
-    motor2_forward()
-
-def turn_right():
-    motor1_forward()
     motor2_backward()
+    motor1_forward()
 
+# Function to turn the vehicle right
+def turn_right():
+    motor2_forward()
+    motor1_backward()
+
+# Motor control functions for specific directions
 def motor1_forward():
     IN1.on()
     IN2.off()
@@ -59,13 +81,64 @@ def motor2_backward():
     IN3.off()
     IN4.on()
 
+# Function to stop all motors
 def stop_all():
     IN1.off()
     IN2.off()
     IN3.off()
     IN4.off()
 
-# Strona HTML z formularzem
+# Measure the distance using the ultrasonic sensor
+def measure_distance():
+    TRIG.off()
+    time.sleep_us(MEASUREMENT_STOP_DELAY)
+    TRIG.on()
+    time.sleep_us(MEASUREMENT_START_DELAY)
+    TRIG.off()
+    
+    while ECHO.value() == 0:
+        pass
+    start_time = time.ticks_us()
+    
+    while ECHO.value() == 1:
+        pass
+    end_time = time.ticks_us()
+    
+    duration = time.ticks_diff(end_time, start_time)
+    distance = (duration * 0.0343) / 2 # Calculate distance in cm
+    return distance
+
+# Autonomous driving behavior based on distance measurements
+def autonomous_drive(timer):
+    global auto_mode, forward_mode
+    if auto_mode:
+        distance_front = measure_distance()
+        print("Distance front:", distance_front, "cm")
+        
+        if distance_front <= DISTANCE_STOP0:
+            stop_all()
+            time.sleep(0.5)
+            move_backward()
+            time.sleep(0.5)
+            stop_all()
+            time.sleep(0.5)
+            
+            while measure_distance() <= DISTANCE_STOP1:
+                turn_right()
+                time.sleep(0.5)
+        else:
+            move_forward()
+
+# Check distance in forward mode and stop if an obstacle is detected
+def check_forward_distance(timer):
+    global forward_mode
+    if forward_mode:
+        distance_front = measure_distance()
+        if distance_front <= DISTANCE_STOP0:
+            stop_all()
+            forward_mode = False
+
+# Generate a web page for controlling the vehicle
 def web_page():
     html = """
 <!DOCTYPE html>
@@ -202,7 +275,7 @@ def web_page():
             <button onclick="setDuty('50')" class="btn">50%</button>
             <button onclick="setDuty('75')" class="btn">75%</button>
             <button onclick="setDuty('100')" class="btn">100%</button>
-            <button onclick="" class="btn">AUTO</button>
+            <button onclick="sendCommand('auto')" class="btn">AUTO</button>
         </div>
     </div>
     <script>
@@ -220,11 +293,10 @@ def web_page():
     </script>
 </body>
 </html>
-
-
 """
     return html
 
+# Set up the device as a Wi-Fi access point
 def ap_mode(ssid, password):
     ap = network.WLAN(network.AP_IF)
     ap.config(essid=ssid, password=password)
@@ -237,7 +309,7 @@ def ap_mode(ssid, password):
     print('IP Address To Connect to: ' + ap.ifconfig()[0])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 80))  
+    s.bind(('', 80)) 
     s.listen(5)
     print("Socket listening on port 80")
 
@@ -247,6 +319,7 @@ def ap_mode(ssid, password):
         request = conn.recv(1024).decode()
         print('Content = %s' % str(request))
         
+        # Parse and execute commands from the web interface
         if '/set_duty' in request:
             value = request.split('value=')[1].split(' ')[0]
             if value == '25':
@@ -257,8 +330,6 @@ def ap_mode(ssid, password):
                 duty = int(65535 * 0.75)
             elif value == '100':
                 duty = int(65535 * 1.0)
-            elif value == '10':
-                duty = int(65535 * 0.1)
             EN1.duty_u16(duty)
             EN2.duty_u16(duty)
         
@@ -266,18 +337,36 @@ def ap_mode(ssid, password):
             command = request.split('command=')[1].split(' ')[0]
             if command == 'forward':
                 move_forward()
+                global forward_mode
+                forward_mode = True
             elif command == 'backward':
                 move_backward()
+                forward_mode = False
             elif command == 'left':
                 turn_left()
+                forward_mode = False
             elif command == 'right':
                 turn_right()
+                forward_mode = False
             elif command == 'stop':
                 stop_all()
+                forward_mode = False
+            elif command == 'auto':
+                global auto_mode
+                auto_mode = not auto_mode
+                forward_mode = False
 
+        # Send the web page as a response
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + web_page()
         conn.sendall(response.encode())
         conn.close()
 
-ap_mode('SSID', 'PASSWORD')
+# Set up timers for autonomous and forward mode checks
+autonomous_timer = Timer(-1)
+autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
 
+forward_timer = Timer(-1)
+forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
+
+# Start the access point mode with given SSID and password
+ap_mode('SSID', 'PASSWORD')
