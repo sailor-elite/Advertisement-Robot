@@ -8,7 +8,14 @@ Mentioned boards are used for the sound effects (ESP32) and steering DC Motors t
 Components used in the project:
 - ESP32 S3 N16R8 DevKitC-1 16MB Flash 8MB PSRAM 2 x USB C
 - Raspberry Pi Pico W - RP2040 ARM Cortex M0+ CYW43439 - WiFi
-- MicroSD reader board
+- MicroSD Reader Board
+- HC-SR04 Ultrasonic Sensor
+- MAX98357 I2S Audio Amplifier
+- HC-SR501 PIR Sensor
+- L928N Motor Driver
+- 2 Motors
+- 2 18650 Li-ion Batteries
+- 4 ohm Speaker
 
 # DEPENDENCIES
 
@@ -19,11 +26,13 @@ Components used in the project:
 **IDE:**
 - Visual Studio Code
 - PlatformIO
+- Thonny
 
 **Libriaries:**
 - Default Arduino Libraries
 - AudioI2S library made by schreibfaul1
 - SD library made by Arduino
+
 
 **Audio file adjustments:**
 - .mp3 file format
