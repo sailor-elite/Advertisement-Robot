@@ -9,22 +9,10 @@ RIGHT_MOTOR_PIN2 = 1
 LEFT_MOTOR_PIN1 = 2
 LEFT_MOTOR_PIN2 = 3
 DEFAULT_FREQUENCY = 50           # PWM frequency for motors
-DEFAULT_DUTY_CYCLE = 65535       # Maximum duty cycle for full speed
+DEFAULT_DUTY_CYCLE = 65535		 # Maximum duty cycle for full speed
 
 RIGHT_MOTOR_CONTROL_PIN_OUTPUT = 6
 LEFT_MOTOR_CONTROL_PIN_OUTPUT = 7
-
-# Ultrasonic sensor configuration
-TRIGGER_PIN = 26                 # Pin to send trigger signal
-ECHO_PIN = 27                    # Pin to receive echo signal
-
-# Distance thresholds for stopping and turning
-DISTANCE_STOP0 = 40              # Distance to stop the vehicle
-DISTANCE_STOP1 = 45              # Distance to start turning
-
-# Autonomous and forward mode settings
-AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
-FORWARD_TIMER_PERIOD = 100       # Time interval for checking forward distance
 
 # Initialize motor pins
 IN1 = Pin(RIGHT_MOTOR_PIN1, Pin.OUT)
@@ -40,15 +28,42 @@ EN2.freq(DEFAULT_FREQUENCY)
 EN1.duty_u16(DEFAULT_DUTY_CYCLE)  
 EN2.duty_u16(DEFAULT_DUTY_CYCLE)
 
-# Initialize ultrasonic sensor pins
-TRIG = Pin(TRIGGER_PIN, Pin.OUT)
-ECHO = Pin(ECHO_PIN, Pin.IN)
+
+
+# Ultrasonic sensor configuration
+TRIG_1_B = 26
+ECHO_1_B = 27
+TRIG_2_T = 14
+ECHO_2_T = 15
+TRIG_BOTTOM = Pin(TRIG_1_B, Pin.OUT)
+ECHO_BOTTOM = Pin(ECHO_1_B, Pin.IN)
+TRIG_TOP = Pin(TRIG_2_T, Pin.OUT)
+ECHO_TOP = Pin(ECHO_2_T, Pin.IN)
+
+# Distance thresholds for stopping and turning
+
+DISTANCE_STOP0 = 40              # Distance to stop the vehicle
+DISTANCE_STOP1 = 45              # Distance to start turning
+
+# Mute pinouts
+MUTE = 8
+
+mute_pin = Pin(MUTE, Pin.OUT)
+mute_state = False # Default mute state
+
+# Autonomous and forward mode settings
+AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
+FORWARD_TIMER_PERIOD = 100       # Time interval for checking forward distance
+
+# Ultrasonic sensor parameters
+MEASUREMENT_STOP_DELAY = 2
+MEASUREMENT_START_DELAY = 10
 
 # Function to move the vehicle forward
 def move_forward():
     motor1_forward()
     motor2_forward()
-
+    
 # Function to move the vehicle backward
 def move_backward():
     motor1_backward()
@@ -89,52 +104,81 @@ def stop_all():
     IN4.off()
 
 # Measure the distance using the ultrasonic sensor
-def measure_distance():
-    TRIG.off()
+def measure_distance_bottom():
+    TRIG_BOTTOM.off()
     time.sleep_us(MEASUREMENT_STOP_DELAY)
-    TRIG.on()
+    TRIG_BOTTOM.on()
     time.sleep_us(MEASUREMENT_START_DELAY)
-    TRIG.off()
+    TRIG_BOTTOM.off()
     
-    while ECHO.value() == 0:
+    while ECHO_BOTTOM.value() == 0:
         pass
     start_time = time.ticks_us()
     
-    while ECHO.value() == 1:
+    while ECHO_BOTTOM.value() == 1:
         pass
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * 0.0343) / 2 # Calculate distance in cm
+    distance = (duration * 0.0343) / 2
     return distance
+
+
+def measure_distance_top():
+    TRIG_TOP.off()
+    time.sleep_us(2)
+    TRIG_TOP.on()
+    time.sleep_us(10)
+    TRIG_TOP.off()
+    
+    while ECHO_TOP.value() == 0:
+        pass
+    start_time = time.ticks_us()
+    
+    while ECHO_TOP.value() == 1:
+        pass
+    end_time = time.ticks_us()
+    
+    duration = time.ticks_diff(end_time, start_time)
+    distance = (duration * 0.0343) / 2
+    return distance
+
+auto_mode = False
+forward_mode = False
 
 # Autonomous driving behavior based on distance measurements
 def autonomous_drive(timer):
     global auto_mode, forward_mode
     if auto_mode:
-        distance_front = measure_distance()
-        print("Distance front:", distance_front, "cm")
+        distance_front_bottom = measure_distance_bottom()
+        distance_front_top = measure_distance_top()
+        print("Distance front bottom:", distance_front_bottom, "cm")
+        print("Distance front top:", distance_front_top, "cm")
         
-        if distance_front <= DISTANCE_STOP0:
+        if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <= DISTANCE_STOP0: 
             stop_all()
             time.sleep(0.5)
             move_backward()
             time.sleep(0.5)
             stop_all()
-            time.sleep(0.5)
-            
-            while measure_distance() <= DISTANCE_STOP1:
+            time.sleep(0.5)    
+            while measure_distance_bottom() <= DISTANCE_STOP1:
+                turn_right()
+                time.sleep(0.5)
+            while measure_distance_top() <= DISTANCE_STOP1:
                 turn_right()
                 time.sleep(0.5)
         else:
             move_forward()
+            
 
 # Check distance in forward mode and stop if an obstacle is detected
 def check_forward_distance(timer):
     global forward_mode
     if forward_mode:
-        distance_front = measure_distance()
-        if distance_front <= DISTANCE_STOP0:
+        distance_front_bottom = measure_distance_bottom()
+        distance_front_top = measure_distance_top()
+        if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <=DISTANCE_STOP0:  # Próg odległości w cm
             stop_all()
             forward_mode = False
 
@@ -276,6 +320,7 @@ def web_page():
             <button onclick="setDuty('75')" class="btn">75%</button>
             <button onclick="setDuty('100')" class="btn">100%</button>
             <button onclick="sendCommand('auto')" class="btn">AUTO</button>
+            <button onclick="toggleMute()" class="btn">MUTE</button>
         </div>
     </div>
     <script>
@@ -290,6 +335,12 @@ def web_page():
             xhr.open("GET", "/move?command=" + command, true);
             xhr.send();
         }
+         function toggleMute() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/mute", true);
+            xhr.send();
+            }
+
     </script>
 </body>
 </html>
@@ -309,7 +360,7 @@ def ap_mode(ssid, password):
     print('IP Address To Connect to: ' + ap.ifconfig()[0])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 80)) 
+    s.bind(('', 80))  # Powiązanie gniazda z adresem IP punktu dostępowego
     s.listen(5)
     print("Socket listening on port 80")
 
@@ -355,6 +406,14 @@ def ap_mode(ssid, password):
                 global auto_mode
                 auto_mode = not auto_mode
                 forward_mode = False
+            elif '/mute' in request:
+                if mute_state == False:
+                    mute_pin.value (1)
+                    mute_state = True
+                
+                elif mute_state == True:
+                    mute_pin.value (0)
+                    mute_state = False
 
         # Send the web page as a response
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + web_page()
@@ -365,8 +424,11 @@ def ap_mode(ssid, password):
 autonomous_timer = Timer(-1)
 autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
 
+# Start the access point mode with given SSID and password
 forward_timer = Timer(-1)
 forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
 
-# Start the access point mode with given SSID and password
-ap_mode('SSID', 'PASSWORD')
+ap_mode('mm', '123456789')
+
+
+
