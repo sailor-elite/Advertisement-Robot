@@ -9,9 +9,8 @@ Components used in the project:
 - ESP32 S3 N16R8 DevKitC-1 16MB Flash 8MB PSRAM 2 x USB C
 - Raspberry Pi Pico W - RP2040 ARM Cortex M0+ CYW43439 - WiFi
 - MicroSD Reader Board
-- 2x HC-SR04 Ultrasonic Sensor
+- 3x HC-SR04 Ultrasonic Sensor
 - MAX98357 I2S Audio Amplifier
-- HC-SR501 PIR Sensor
 - L928N Motor Driver
 - 2x Motors
 - 2x 18650 Li-ion Batteries
