@@ -44,8 +44,8 @@ Components used in the project:
 For working audio mp3 converter check out the **Useful links** section.
 
 # CIRCUIT DIAGRAM
-DC Motor Steering Schematic: ![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/e47f2f9b-eda2-4578-a686-4394d74dd514)
-Audio Schematic: ![Esp32Audio_bb](https://github.com/user-attachments/assets/e2e7c609-6644-4263-9c80-f52d90c4c7f2)
+DC Motor Steering Schematic: ![PicoMotorCircuitDiagram_bb](https://github.com/user-attachments/assets/d7bc250d-239f-4bec-9a8f-44edb073feac)
+Audio Schematic: ![Esp32Audio_bb](https://github.com/user-attachments/assets/3ebe49d5-13b6-4f1f-8fa7-81040852b130)
 Power supply Schematic: ![PowerSupplyCircuit_bb](https://github.com/user-attachments/assets/907c398e-a168-46ea-b94d-b6abd995351c)
 # INSTALLATION
 
