@@ -476,9 +476,8 @@ forward_timer = Timer(-1)
 forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
 
 
-
 cover_distance_timer = Timer(-1)
-forward_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
+cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
 
 
 # Start the access point mode with given SSID and password
