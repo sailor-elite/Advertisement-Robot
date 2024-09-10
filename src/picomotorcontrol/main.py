@@ -9,7 +9,7 @@ RIGHT_MOTOR_PIN2 = 1
 LEFT_MOTOR_PIN1 = 2
 LEFT_MOTOR_PIN2 = 3
 DEFAULT_FREQUENCY = 50           # PWM frequency for motors
-DEFAULT_DUTY_CYCLE = 65535		 # Maximum duty cycle for full speed
+DEFAULT_DUTY_CYCLE = 65535       # Maximum duty cycle for full speed
 
 RIGHT_MOTOR_CONTROL_PIN_OUTPUT = 6
 LEFT_MOTOR_CONTROL_PIN_OUTPUT = 7
@@ -35,15 +35,25 @@ TRIG_1_B = 26
 ECHO_1_B = 27
 TRIG_2_T = 14
 ECHO_2_T = 15
+TRIG_3_T = 13
+ECHO_3_T = 12
+
 TRIG_BOTTOM = Pin(TRIG_1_B, Pin.OUT)
 ECHO_BOTTOM = Pin(ECHO_1_B, Pin.IN)
 TRIG_TOP = Pin(TRIG_2_T, Pin.OUT)
 ECHO_TOP = Pin(ECHO_2_T, Pin.IN)
+TRIG_COVER = Pin(TRIG_3_T, Pin.OUT)
+ECHO_COVER = Pin (ECHO_3_T, Pin.IN)
+
 
 # Distance thresholds for stopping and turning
 
 DISTANCE_STOP0 = 40              # Distance to stop the vehicle
 DISTANCE_STOP1 = 45              # Distance to start turning
+DISTANCE_COVER = 20				 # Distance to set ESP32 Interrupt PIN high
+
+# Constant for distance measurement
+DISTANCE_MULTIPLIER = 0.0343
 
 # Mute pinouts
 MUTE = 8
@@ -51,9 +61,15 @@ MUTE = 8
 mute_pin = Pin(MUTE, Pin.OUT)
 mute_state = False # Default mute state
 
+# Audio interrupt
+AUDIO = 11
+audio_interrupt_pin = Pin(AUDIO, Pin.OUT)
+audio_interrupt_state = False
+
 # Autonomous and forward mode settings
 AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
 FORWARD_TIMER_PERIOD = 100       # Time interval for checking forward distance
+COVER_TIMER_PERIOD = 200		 # Time interval for checking distance from cover
 
 # Ultrasonic sensor parameters
 MEASUREMENT_STOP_DELAY = 2
@@ -120,15 +136,15 @@ def measure_distance_bottom():
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * 0.0343) / 2
+    distance = (duration * DISTANCE_MULTIPLIER) / 2
     return distance
 
 
 def measure_distance_top():
     TRIG_TOP.off()
-    time.sleep_us(2)
+    time.sleep_us(MEASUREMENT_STOP_DELAY)
     TRIG_TOP.on()
-    time.sleep_us(10)
+    time.sleep_us(MEASUREMENT_START_DELAY)
     TRIG_TOP.off()
     
     while ECHO_TOP.value() == 0:
@@ -140,8 +156,29 @@ def measure_distance_top():
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * 0.0343) / 2
+    distance = (duration * DISTANCE_MULTIPLIER) / 2
     return distance
+
+
+def measure_distance_cover():
+    TRIG_COVER.off()
+    time.sleep_us(MEASUREMENT_STOP_DELAY)
+    TRIG_COVER.on()
+    time.sleep_us(MEASUREMENT_START_DELAY)
+    TRIG_COVER.off()
+    
+    while ECHO_COVER.value() == 0:
+        pass
+    start_time = time.ticks_us()
+    
+    while ECHO_COVER.value() == 1:
+        pass
+    end_time = time.ticks_us()
+    
+    duration = time.ticks_diff(end_time, start_time)
+    distance = (duration * DISTANCE_MULTIPLIER) / 2
+    return distance
+
 
 auto_mode = False
 forward_mode = False
@@ -178,9 +215,19 @@ def check_forward_distance(timer):
     if forward_mode:
         distance_front_bottom = measure_distance_bottom()
         distance_front_top = measure_distance_top()
-        if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <=DISTANCE_STOP0:  # Próg odległości w cm
+        if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <=DISTANCE_STOP0: 
             stop_all()
             forward_mode = False
+        
+def check_cover_distance(timer):
+    distance_cover = measure_distance_cover()
+    print("Distance cover:", distance_cover, "cm")
+    if distance_cover <= DISTANCE_COVER:
+        audio_interrupt_pin.value (1)
+        audio_interrupt_state = True
+    else:
+        audio_interrupt_pin.value (0)
+        audio_interrupt_state = False
 
 # Generate a web page for controlling the vehicle
 def web_page():
@@ -360,7 +407,7 @@ def ap_mode(ssid, password):
     print('IP Address To Connect to: ' + ap.ifconfig()[0])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 80))  # Powiązanie gniazda z adresem IP punktu dostępowego
+    s.bind(('', 80))  
     s.listen(5)
     print("Socket listening on port 80")
 
@@ -420,15 +467,22 @@ def ap_mode(ssid, password):
         conn.sendall(response.encode())
         conn.close()
 
-# Set up timers for autonomous and forward mode checks
+# Set up timers for autonomous, forward mode checks and distance from cover
 autonomous_timer = Timer(-1)
 autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
 
-# Start the access point mode with given SSID and password
+
 forward_timer = Timer(-1)
 forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
 
-ap_mode('mm', '123456789')
+
+
+cover_distance_timer = Timer(-1)
+forward_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
+
+
+# Start the access point mode with given SSID and password
+ap_mode('METALUS', '123456789')
 
 
 
