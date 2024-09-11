@@ -481,7 +481,7 @@ cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callba
 
 
 # Start the access point mode with given SSID and password
-ap_mode('METALUS', '123456789')
+ap_mode('SSID', 'PASSWORD')
 
 
 
