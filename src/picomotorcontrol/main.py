@@ -481,7 +481,9 @@ forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=ch
 cover_distance_timer = Timer(-1)
 cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
 
-ap_mode('METALUS', '123456789')
+
+# Start the access point mode with given SSID and password
+ap_mode('SSID', 'PASSWORD')
 
 
 
