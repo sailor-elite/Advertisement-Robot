@@ -16,7 +16,7 @@
 #define MUTE_BUTTON 9
 
 // Parameters
-#define Volume 17        // Volume level (range 0 to 21)
+#define Volume 21        // Volume level (range 0 to 21)
 #define Baud 9600        // Serial communication speed
 #define MinMusicNumber 0 // Minimum index for music files, it should be always 0
 #define MaxMusicNumber 23
@@ -152,7 +152,7 @@ void loop()
     }
     else
     {
-        audio.setVolume(17);
+        audio.setVolume(Volume);
     }
     
     audio.loop(); // Handle ongoing audio playback

@@ -52,9 +52,6 @@ DISTANCE_STOP0 = 40              # Distance to stop the vehicle
 DISTANCE_STOP1 = 45              # Distance to start turning
 DISTANCE_COVER = 20				 # Distance to set ESP32 Interrupt PIN high
 
-# Constant for distance measurement
-DISTANCE_MULTIPLIER = 0.0343
-
 # Mute pinouts
 MUTE = 8
 
@@ -136,7 +133,7 @@ def measure_distance_bottom():
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * DISTANCE_MULTIPLIER) / 2
+    distance = (duration * 0.0343) / 2
     return distance
 
 
@@ -156,7 +153,7 @@ def measure_distance_top():
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * DISTANCE_MULTIPLIER) / 2
+    distance = (duration * 0.0343) / 2
     return distance
 
 
@@ -176,7 +173,7 @@ def measure_distance_cover():
     end_time = time.ticks_us()
     
     duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * DISTANCE_MULTIPLIER) / 2
+    distance = (duration * 0.0343) / 2
     return distance
 
 
@@ -430,6 +427,16 @@ def ap_mode(ssid, password):
                 duty = int(65535 * 1.0)
             EN1.duty_u16(duty)
             EN2.duty_u16(duty)
+            
+        elif '/mute' in request:
+            global mute_state
+            if mute_state == False:
+                mute_pin.value (1)
+                mute_state = True
+                
+            elif mute_state == True:
+                mute_pin.value (0)
+                mute_state = False
         
         elif '/move' in request:
             command = request.split('command=')[1].split(' ')[0]
@@ -447,31 +454,26 @@ def ap_mode(ssid, password):
                 turn_right()
                 forward_mode = False
             elif command == 'stop':
+                global auto_mode
                 stop_all()
                 forward_mode = False
+                auto_mode = False
             elif command == 'auto':
                 global auto_mode
                 auto_mode = not auto_mode
                 forward_mode = False
-            elif '/mute' in request:
-                if mute_state == False:
-                    mute_pin.value (1)
-                    mute_state = True
-                
-                elif mute_state == True:
-                    mute_pin.value (0)
-                    mute_state = False
+            
 
         # Send the web page as a response
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + web_page()
         conn.sendall(response.encode())
         conn.close()
 
-# Set up timers for autonomous, forward mode checks and distance from cover
+# Set up timers for autonomous and forward mode checks
 autonomous_timer = Timer(-1)
 autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
 
-
+# Start the access point mode with given SSID and password
 forward_timer = Timer(-1)
 forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
 
@@ -479,8 +481,6 @@ forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=ch
 cover_distance_timer = Timer(-1)
 cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
 
-
-# Start the access point mode with given SSID and password
 ap_mode('METALUS', '123456789')
 
 
