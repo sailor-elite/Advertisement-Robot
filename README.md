@@ -1,7 +1,4 @@
 ![472854909_8958886900833710_4551872021614045842_n-ezgif com-video-to-gif-converter (2)](https://github.com/user-attachments/assets/104a51fe-2ca8-415e-9d76-222c7006d76f)
-![467910306_576118088518814_6169324368863458126_n](https://github.com/user-attachments/assets/3b608f8a-a7fd-4950-ab67-2d97284f8277)
-
-
 # GENERAL INFORMATION
 
 
@@ -65,3 +62,7 @@ Power supply Schematic: ![PowerSupplyCircuit_bb](https://github.com/user-attachm
 
 # USEFUL LINKS
 https://onlineaudioconverter.com/#
+
+# SHOWCASE
+Advertisement Robot pilot:
+![467910306_576118088518814_6169324368863458126_n](https://github.com/user-attachments/assets/3b608f8a-a7fd-4950-ab67-2d97284f8277)
