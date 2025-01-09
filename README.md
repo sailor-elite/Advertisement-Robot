@@ -1,4 +1,6 @@
-![472854909_8958886900833710_4551872021614045842_n-ezgif com-video-to-gif-converter (2)](https://github.com/user-attachments/assets/104a51fe-2ca8-415e-9d76-222c7006d76f)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/104a51fe-2ca8-415e-9d76-222c7006d76f" />
+</p>
 # GENERAL INFORMATION
 
 
