@@ -66,7 +66,7 @@ audio_interrupt_state = False
 # Autonomous and forward mode settings
 AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
 FORWARD_TIMER_PERIOD = 100       # Time interval for checking forward distance
-COVER_TIMER_PERIOD = 200		 # Time interval for checking distance from cover
+COVER_TIMER_PERIOD = 200         # Time interval for checking distance from cover
 
 # Ultrasonic sensor parameters
 MEASUREMENT_STOP_DELAY = 2
@@ -183,42 +183,40 @@ forward_mode = False
 # Autonomous driving behavior based on distance measurements
 def autonomous_drive(timer):
     global auto_mode, forward_mode
-    if auto_mode:
+    if auto_mode and not forward_mode:
         distance_front_bottom = measure_distance_bottom()
         distance_front_top = measure_distance_top()
-        print("Distance front bottom:", distance_front_bottom, "cm")
-        print("Distance front top:", distance_front_top, "cm")
-        
+      
         if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <= DISTANCE_STOP0: 
             stop_all()
-            time.sleep(0.5)
+            time.sleep(0.1)  
             move_backward()
-            time.sleep(0.5)
+            time.sleep(0.1)
             stop_all()
-            time.sleep(0.5)    
-            while measure_distance_bottom() <= DISTANCE_STOP1:
+            time.sleep(0.1)    
+
+            if measure_distance_bottom() <= DISTANCE_STOP1 or measure_distance_top() <= DISTANCE_STOP1:
                 turn_right()
-                time.sleep(0.5)
-            while measure_distance_top() <= DISTANCE_STOP1:
-                turn_right()
-                time.sleep(0.5)
+                time.sleep(0.1)
+            else:
+                move_forward()
         else:
             move_forward()
             
-
 # Check distance in forward mode and stop if an obstacle is detected
 def check_forward_distance(timer):
     global forward_mode
     if forward_mode:
         distance_front_bottom = measure_distance_bottom()
         distance_front_top = measure_distance_top()
+        
         if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <=DISTANCE_STOP0: 
             stop_all()
             forward_mode = False
+
         
 def check_cover_distance(timer):
     distance_cover = measure_distance_cover()
-    print("Distance cover:", distance_cover, "cm")
     if distance_cover <= DISTANCE_COVER:
         audio_interrupt_pin.value (1)
         audio_interrupt_state = True
@@ -365,6 +363,7 @@ def web_page():
             <button onclick="setDuty('100')" class="btn">100%</button>
             <button onclick="sendCommand('auto')" class="btn">AUTO</button>
             <button onclick="toggleMute()" class="btn">MUTE</button>
+           
         </div>
     </div>
     <script>
@@ -400,31 +399,29 @@ def ap_mode(ssid, password):
     while not ap.active():
         pass
 
-    print('AP Mode Is Active, You can Now Connect')
-    print('IP Address To Connect to: ' + ap.ifconfig()[0])
+
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 80))  
-    s.listen(5)
-    print("Socket listening on port 80")
+    s.listen(1)
+
 
     while True:
         conn, addr = s.accept()
-        print('Got a connection from %s' % str(addr))
+        
         request = conn.recv(1024).decode()
-        print('Content = %s' % str(request))
         
         # Parse and execute commands from the web interface
         if '/set_duty' in request:
             value = request.split('value=')[1].split(' ')[0]
             if value == '25':
-                duty = int(65535 * 0.25)
+                duty = int(DEFAULT_DUTY_CYCLE * 0.25)
             elif value == '50':
-                duty = int(65535 * 0.50)
+                duty = int(DEFAULT_DUTY_CYCLE * 0.50)
             elif value == '75':
-                duty = int(65535 * 0.75)
+                duty = int(DEFAULT_DUTY_CYCLE * 0.75)
             elif value == '100':
-                duty = int(65535 * 1.0)
+                duty = int(DEFAULT_DUTY_CYCLE * 1.0)
             EN1.duty_u16(duty)
             EN2.duty_u16(duty)
             
@@ -477,13 +474,10 @@ autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=au
 forward_timer = Timer(-1)
 forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
 
-
 cover_distance_timer = Timer(-1)
 cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
 
 
 # Start the access point mode with given SSID and password
 ap_mode('SSID', 'PASSWORD')
-
-
 
