@@ -57,11 +57,12 @@ MUTE = 8
 
 mute_pin = Pin(MUTE, Pin.OUT)
 mute_state = False # Default mute state
+auto_mode = False # Default auto mode
+forward_mode = False # Default foward mode
 
 # Audio interrupt
 AUDIO = 11
 audio_interrupt_pin = Pin(AUDIO, Pin.OUT)
-audio_interrupt_state = False
 
 # Autonomous and forward mode settings
 AUTO_TIMER_PERIOD = 500          # Time interval for autonomous driving
@@ -117,18 +118,18 @@ def stop_all():
     IN4.off()
 
 # Measure the distance using the ultrasonic sensor
-def measure_distance_bottom():
-    TRIG_BOTTOM.off()
+def measure_distance(trig_pin, echo_pin):
+    trig_pin.off()
     time.sleep_us(MEASUREMENT_STOP_DELAY)
-    TRIG_BOTTOM.on()
+    trig_pin.on()
     time.sleep_us(MEASUREMENT_START_DELAY)
-    TRIG_BOTTOM.off()
+    trig_pin.off()
     
-    while ECHO_BOTTOM.value() == 0:
+    while echo_pin.value() == 0:
         pass
     start_time = time.ticks_us()
     
-    while ECHO_BOTTOM.value() == 1:
+    while echo_pin.value() == 1:
         pass
     end_time = time.ticks_us()
     
@@ -137,55 +138,13 @@ def measure_distance_bottom():
     return distance
 
 
-def measure_distance_top():
-    TRIG_TOP.off()
-    time.sleep_us(MEASUREMENT_STOP_DELAY)
-    TRIG_TOP.on()
-    time.sleep_us(MEASUREMENT_START_DELAY)
-    TRIG_TOP.off()
-    
-    while ECHO_TOP.value() == 0:
-        pass
-    start_time = time.ticks_us()
-    
-    while ECHO_TOP.value() == 1:
-        pass
-    end_time = time.ticks_us()
-    
-    duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * 0.0343) / 2
-    return distance
-
-
-def measure_distance_cover():
-    TRIG_COVER.off()
-    time.sleep_us(MEASUREMENT_STOP_DELAY)
-    TRIG_COVER.on()
-    time.sleep_us(MEASUREMENT_START_DELAY)
-    TRIG_COVER.off()
-    
-    while ECHO_COVER.value() == 0:
-        pass
-    start_time = time.ticks_us()
-    
-    while ECHO_COVER.value() == 1:
-        pass
-    end_time = time.ticks_us()
-    
-    duration = time.ticks_diff(end_time, start_time)
-    distance = (duration * 0.0343) / 2
-    return distance
-
-
-auto_mode = False
-forward_mode = False
 
 # Autonomous driving behavior based on distance measurements
-def autonomous_drive(timer):
+def autonomous_drive(timer): 
     global auto_mode, forward_mode
     if auto_mode and not forward_mode:
-        distance_front_bottom = measure_distance_bottom()
-        distance_front_top = measure_distance_top()
+        distance_front_bottom = measure_distance(TRIG_BOTTOM, ECHO_BOTTOM)
+        distance_front_top = measure_distance(TRIG_TOP, ECHO_TOP)
       
         if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <= DISTANCE_STOP0: 
             stop_all()
@@ -195,34 +154,23 @@ def autonomous_drive(timer):
             stop_all()
             time.sleep(0.1)    
 
-            if measure_distance_bottom() <= DISTANCE_STOP1 or measure_distance_top() <= DISTANCE_STOP1:
+            if distance_front_bottom <= DISTANCE_STOP1 or distance_front_top <= DISTANCE_STOP1:
                 turn_right()
                 time.sleep(0.1)
             else:
                 move_forward()
         else:
             move_forward()
+    
             
-# Check distance in forward mode and stop if an obstacle is detected
-def check_forward_distance(timer):
-    global forward_mode
-    if forward_mode:
-        distance_front_bottom = measure_distance_bottom()
-        distance_front_top = measure_distance_top()
-        
-        if distance_front_bottom <= DISTANCE_STOP0 or distance_front_top <=DISTANCE_STOP0: 
-            stop_all()
-            forward_mode = False
 
         
 def check_cover_distance(timer):
-    distance_cover = measure_distance_cover()
+    distance_cover = measure_distance(TRIG_COVER, ECHO_COVER)
     if distance_cover <= DISTANCE_COVER:
         audio_interrupt_pin.value (1)
-        audio_interrupt_state = True
     else:
         audio_interrupt_pin.value (0)
-        audio_interrupt_state = False
 
 # Generate a web page for controlling the vehicle
 def web_page():
@@ -361,7 +309,7 @@ def web_page():
             <button onclick="setDuty('50')" class="btn">50%</button>
             <button onclick="setDuty('75')" class="btn">75%</button>
             <button onclick="setDuty('100')" class="btn">100%</button>
-            <button onclick="sendCommand('auto')" class="btn">AUTO</button>
+            <button onclick="toggleAuto()" class="btn">AUTO</button>
             <button onclick="toggleMute()" class="btn">MUTE</button>
            
         </div>
@@ -383,6 +331,11 @@ def web_page():
             xhr.open("GET", "/mute", true);
             xhr.send();
             }
+         function toggleAuto() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/auto", true);
+            xhr.send();
+            }
 
     </script>
 </body>
@@ -400,7 +353,6 @@ def ap_mode(ssid, password):
         pass
 
 
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 80))  
     s.listen(1)
@@ -410,7 +362,6 @@ def ap_mode(ssid, password):
         conn, addr = s.accept()
         
         request = conn.recv(1024).decode()
-        
         # Parse and execute commands from the web interface
         if '/set_duty' in request:
             value = request.split('value=')[1].split(' ')[0]
@@ -434,12 +385,22 @@ def ap_mode(ssid, password):
             elif mute_state == True:
                 mute_pin.value (0)
                 mute_state = False
-        
+        elif '/auto' in request:
+            global auto_mode
+            print (auto_mode)
+            forward_mode = False
+            if auto_mode == False:
+                auto_mode = True
+            elif auto_mode == True:
+                auto_mode = False
+                forward_mode = False
+                stop_all()
+
+
         elif '/move' in request:
             command = request.split('command=')[1].split(' ')[0]
             if command == 'forward':
                 move_forward()
-                global forward_mode
                 forward_mode = True
             elif command == 'backward':
                 move_backward()
@@ -451,14 +412,10 @@ def ap_mode(ssid, password):
                 turn_right()
                 forward_mode = False
             elif command == 'stop':
-                global auto_mode
                 stop_all()
                 forward_mode = False
                 auto_mode = False
-            elif command == 'auto':
-                global auto_mode
-                auto_mode = not auto_mode
-                forward_mode = False
+        
             
 
         # Send the web page as a response
@@ -470,14 +427,14 @@ def ap_mode(ssid, password):
 autonomous_timer = Timer(-1)
 autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
 
-# Start the access point mode with given SSID and password
-forward_timer = Timer(-1)
-forward_timer.init(period=FORWARD_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_forward_distance)
+
+
 
 cover_distance_timer = Timer(-1)
 cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
 
 
 # Start the access point mode with given SSID and password
-ap_mode('SSID', 'PASSWORD')
+ap_mode('METALUS', '123456789')
+
 
