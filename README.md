@@ -59,8 +59,8 @@ Power supply Schematic: ![PowerSupplyCircuit_bb](https://github.com/user-attachm
 2. Insert MicroSD card with your own mp3 files (Remember to adjust proper settings which are mentioned in the **Dependencies** section)
 3. Upload the *main.cpp* code from *audioesp* folder to ESP32 board
 4. Upload the *main.py* code from *picomotorcontrol* folder to Raspberry Pi Pico W's board
-5. Connect to the custom Raspberry Pi Pico W Access Point
-6. Copy the Raspbery Pi Pico W's Access Point IP adress (192.168.4.1) and paste it on the web browser
+5. Download the *Advertisement_Robot_APP.apk* from *Mobile app* folder and install on your device
+6. Connect to the custom Raspberry Pi Pico W Access Point
 7. It should be ready to go! 
 
 # USEFUL LINKS
