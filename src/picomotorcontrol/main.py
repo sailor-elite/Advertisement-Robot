@@ -1,7 +1,8 @@
 import network
 import socket
-from machine import Pin, PWM, Timer
 import time
+import ure
+from machine import Pin, PWM, Timer
 
 # Motor control pins and configuration
 RIGHT_MOTOR_PIN1 = 0
@@ -117,6 +118,12 @@ def stop_all():
     IN3.off()
     IN4.off()
 
+
+# change duty cycle for PWM motor
+
+def set_duty(duty):
+    EN1.duty_u16(duty)  
+    EN2.duty_u16(duty)
 # Measure the distance using the ultrasonic sensor
 def measure_distance(trig_pin, echo_pin):
     trig_pin.off()
@@ -172,178 +179,6 @@ def check_cover_distance(timer):
     else:
         audio_interrupt_pin.value (0)
 
-# Generate a web page for controlling the vehicle
-def web_page():
-    html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MOTOR STEERING</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            background-color: #f0f0f0;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .controller {
-            text-align: center;
-            max-width: 90%;
-            margin: 0 auto;
-        }
-        .controller button {
-            width: 10vw;
-            height: 10vw;
-            margin: 5px;
-            font-size: 1.5vw;
-        }
-        .stop-button {
-            margin: 10px 0;
-            width: 12.5vw;
-            height: 12.5vw;
-            font-size: 1.5vw;
-        }
-        .row {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .col {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .speed-controls {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .speed-controls button {
-            width: 7.5vw;
-            height: 5vw;
-            margin: 2px;
-            font-size: 1.5vw;
-        }
-        @media (max-width: 600px) {
-            .controller button {
-                width: 22.5vw;
-                height: 22.5vw;
-                font-size: 3vw;
-            }
-            .stop-button {
-                width: 17.5vw;
-                height: 17.5vw;
-                font-size: 3vw;
-            }
-             .speed-controls button {
-                width: 14vw;
-                height: 10vw;
-                margin: 2px;
-                font-size: 2.5vw;
-            }
-        }
-        @media (max-width: 400px) {
-            .controller button {
-                width: 20vw;
-                height: 20vw;
-                font-size: 3vw;
-            }
-            .stop-button {
-                width: 22.5vw;
-                height: 22.5vw;
-                font-size: 3vw;
-            }
-            .speed-controls button {
-                width: 14vw;
-                height: 10vw;
-                margin: 2px;
-                font-size: 2.5vw;
-            }
-        }
-             @media (max-width: 300px) {
-            .controller button {
-                width: 20vw;
-                height: 20vw;
-                font-size: 2vw;
-            }
-            .stop-button {
-                width: 15vw;
-                height: 15vw;
-                font-size: 2vw;
-            }
-            .speed-controls button {
-                width: 14vw;
-                height: 10vw;
-                margin: 2px;
-                font-size: 2.5vw;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="controller">
-        <div class="row">
-            <button onclick="sendCommand('forward')" class="btn">MOVE FORWARD</button>
-        </div>
-        <div class="row">
-            <div class="col">
-                <button onclick="sendCommand('left')" class="btn">TURN LEFT</button>
-            </div>
-            <div class="col">
-                <button onclick="sendCommand('stop')" class="btn stop-button">STOP ALL</button>
-            </div>
-            <div class="col">
-                <button onclick="sendCommand('right')" class="btn">TURN RIGHT</button>
-            </div>
-        </div>
-        <div class="row">
-            <button onclick="sendCommand('backward')" class="btn">MOVE BACKWARD</button>
-        </div>
-        <div class="row speed-controls">
-            <button onclick="setDuty('25')" class="btn">25%</button>
-            <button onclick="setDuty('50')" class="btn">50%</button>
-            <button onclick="setDuty('75')" class="btn">75%</button>
-            <button onclick="setDuty('100')" class="btn">100%</button>
-            <button onclick="toggleAuto()" class="btn">AUTO</button>
-            <button onclick="toggleMute()" class="btn">MUTE</button>
-           
-        </div>
-    </div>
-    <script>
-        function setDuty(percentage) {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/set_duty?value=" + percentage, true);
-            xhr.send();
-        }
-
-        function sendCommand(command) {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/move?command=" + command, true);
-            xhr.send();
-        }
-         function toggleMute() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/mute", true);
-            xhr.send();
-            }
-         function toggleAuto() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/auto", true);
-            xhr.send();
-            }
-
-    </script>
-</body>
-</html>
-"""
-    return html
-
-# Set up the device as a Wi-Fi access point
 def ap_mode(ssid, password):
     ap = network.WLAN(network.AP_IF)
     ap.config(essid=ssid, password=password)
@@ -351,90 +186,89 @@ def ap_mode(ssid, password):
 
     while not ap.active():
         pass
+    print(ap.ifconfig()[0])
 
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 80))  
+# Set up the device as a Wi-Fi access point
+def http_server():
+    global auto_mode, forward_mode
+    addr = socket.getaddrinfo('0.0.0.0',80)[0][-1]
+    s = socket.socket()
+    s.bind(addr)  
     s.listen(1)
-
-
+    # Set up timers for autonomous and forward mode checks
+    autonomous_timer = Timer(-1)
+    autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
+    cover_distance_timer = Timer(-1)
+    cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
     while True:
-        conn, addr = s.accept()
+        cl, addr = s.accept()
         
-        request = conn.recv(1024).decode()
-        # Parse and execute commands from the web interface
-        if '/set_duty' in request:
-            value = request.split('value=')[1].split(' ')[0]
-            if value == '25':
-                duty = int(DEFAULT_DUTY_CYCLE * 0.25)
-            elif value == '50':
-                duty = int(DEFAULT_DUTY_CYCLE * 0.50)
-            elif value == '75':
-                duty = int(DEFAULT_DUTY_CYCLE * 0.75)
-            elif value == '100':
-                duty = int(DEFAULT_DUTY_CYCLE * 1.0)
-            EN1.duty_u16(duty)
-            EN2.duty_u16(duty)
-            
-        elif '/mute' in request:
-            global mute_state
-            if mute_state == False:
-                mute_pin.value (1)
-                mute_state = True
-                
-            elif mute_state == True:
-                mute_pin.value (0)
-                mute_state = False
-        elif '/auto' in request:
-            global auto_mode
-            print (auto_mode)
-            forward_mode = False
-            if auto_mode == False:
-                auto_mode = True
-            elif auto_mode == True:
-                auto_mode = False
-                forward_mode = False
-                stop_all()
+        request = cl.recv(1024).decode()
+        print(request)
 
-
-        elif '/move' in request:
-            command = request.split('command=')[1].split(' ')[0]
-            if command == 'forward':
+        match = ure.search("GET (/[^/]+)/", request)
+        if match:
+            command = match.group(1)
+            print(command)
+            if (command == "/MOVEFORWARD"):
                 move_forward()
                 forward_mode = True
-            elif command == 'backward':
+            elif (command == "/MOVEBACKWARD"):
                 move_backward()
                 forward_mode = False
-            elif command == 'left':
+            elif (command == "/TURNLEFT"):
                 turn_left()
                 forward_mode = False
-            elif command == 'right':
+            elif (command == "/TURNRIGHT"):
                 turn_right()
                 forward_mode = False
-            elif command == 'stop':
+            elif (command == "/STOP"):
                 stop_all()
                 forward_mode = False
                 auto_mode = False
+            elif (command == "/AUTO"):
+                forward_mode = False
+                if auto_mode == False:
+                    auto_mode = True
+                elif auto_mode == True:
+                    auto_mode = False
+                    forward_mode = False
+                    stop_all()
+                    
+            elif (command == "/MUTE"):
+                global mute_state
+                if mute_state == False:
+                    mute_pin.value (1)
+                    mute_state = True
+                elif mute_state == True:
+                    mute_pin.value (0)
+                    mute_state = False
+            elif (command == "/setduty25"):
+                duty = int(DEFAULT_DUTY_CYCLE * 0.25)
+                set_duty(duty)
+            elif (command == "/setduty50"):
+                duty = int(DEFAULT_DUTY_CYCLE * 0.50)
+                set_duty(duty)
+            elif (command == "/setduty75"):
+                duty = int(DEFAULT_DUTY_CYCLE * 0.75)
+                set_duty(duty)
+            elif (command == "/setduty100"):
+                duty = int(DEFAULT_DUTY_CYCLE * 1.00)
+                set_duty(duty)
         
-            
-
-        # Send the web page as a response
-        response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + web_page()
-        conn.sendall(response.encode())
-        conn.close()
-
-# Set up timers for autonomous and forward mode checks
-autonomous_timer = Timer(-1)
-autonomous_timer.init(period=AUTO_TIMER_PERIOD, mode=Timer.PERIODIC, callback=autonomous_drive)
-
-
-
-
-cover_distance_timer = Timer(-1)
-cover_distance_timer.init(period=COVER_TIMER_PERIOD, mode=Timer.PERIODIC, callback=check_cover_distance)
-
+        response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+        cl.sendall(response.encode())
+        cl.close()
+        
 
 # Start the access point mode with given SSID and password
-ap_mode('METALUS', '123456789')
+ap_mode('METALUS','123456789')
+http_server()
+
+
+
+
+
 
 
