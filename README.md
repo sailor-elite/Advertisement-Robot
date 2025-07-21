@@ -70,6 +70,5 @@ https://onlineaudioconverter.com/#
 Advertisement Robot pilot:
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3b608f8a-a7fd-4950-ab67-2d97284f8277" />
+  <img src="data/app.png" />
 </p>
-
